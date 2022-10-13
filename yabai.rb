@@ -10,7 +10,7 @@ class Yabai < Formula
 # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
 class Yabai < Formula
   desc "A tiling window manager for macOS based on binary space partitioning"
-  homepage "https://github.com/Tushar1729-k/homebrew-yabai"
+  homepage "https://github.com/Tushar1729-k/yabai"
   url "https://github.com/Tushar1729-k/yabai/archive/refs/tags/v0.tar.gz"
   sha256 "8c6c77902753c81c0302c00e0b7a28a69c3e3a1c43df1e9cfad29e13107b3ea0"
   license "MIT"
