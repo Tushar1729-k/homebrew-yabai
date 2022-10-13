@@ -1,10 +1,3 @@
-class Yabai < Formula
-	desc "Tushar's yabai adds a blur"
-	homepage "https://github.com/Tushar1729-k/homebrew-yabai"
-	url "https://github.com/Tushar1729-k/homebrew-yabai/archive/refs/tags/v0.tar.gz"
-	sha256 "
-
-
 # Documentation: https://docs.brew.sh/Formula-Cookbook
 #                https://rubydoc.brew.sh/Formula
 # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
