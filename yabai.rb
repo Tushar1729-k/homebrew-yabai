@@ -1,6 +1,3 @@
-# Documentation: https://docs.brew.sh/Formula-Cookbook
-#                https://rubydoc.brew.sh/Formula
-# PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
 class Yabai < Formula
   desc "A tiling window manager for macOS based on binary space partitioning"
   homepage "https://github.com/Tushar1729-k/yabai"
