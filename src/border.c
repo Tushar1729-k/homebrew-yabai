@@ -66,73 +66,12 @@ void border_hide_all(void)
 
 void border_redraw(struct window *window)
 {
-    uint8_t is_ordered_in = false;
-    SLSWindowIsOrderedIn(g_connection, window->border.id, &is_ordered_in);
-
-    if (is_ordered_in) {
-        SLSDisableUpdate(g_connection);
-        SLSOrderWindow(g_connection, window->border.id, 0, 0);
-    }
-
+    SLSDisableUpdate(g_connection);
     CGContextClearRect(window->border.context, window->border.frame);
-    CGContextAddPath(window->border.context, window->border.path_ref);
-
-    if (g_window_manager.border_blur) {
-        CGContextDrawPath(window->border.context, kCGPathFillStroke);
-    } else {
-        CGContextStrokePath(window->border.context);
-    }
-
+    CGContextAddPath(window->border.context, window->border.path);
+    CGContextDrawPath(window->border.context, kCGPathFillStroke);
     CGContextFlush(window->border.context);
-
-    if (is_ordered_in) {
-        SLSOrderWindow(g_connection, window->border.id, -1, window->id);
-        SLSReenableUpdate(g_connection);
-    }
-}
-
-void border_resize(struct window *window, CGRect frame)
-{
-    if (window->border.region)   CFRelease(window->border.region);
-    if (window->border.path_ref) CGPathRelease(window->border.path_ref);
-
-    frame = CGRectInset(frame, -g_window_manager.border_width, -g_window_manager.border_width);
-    CGSNewRegionWithRect(&frame, &window->border.region);
-    window->border.frame.size = frame.size;
-
-    window->border.path = (CGRect) {{ 0.5f*g_window_manager.border_width, 0.5f*g_window_manager.border_width }, { frame.size.width - g_window_manager.border_width, frame.size.height - g_window_manager.border_width }};
-    window->border.path_ref = CGPathCreateWithRoundedRect(window->border.path, cgrect_clamp_x_radius(window->border.path, g_window_manager.border_radius), cgrect_clamp_y_radius(window->border.path, g_window_manager.border_radius), NULL);
-
-    uint8_t is_ordered_in = false;
-    SLSWindowIsOrderedIn(g_connection, window->border.id, &is_ordered_in);
-
-    if (is_ordered_in) {
-        SLSDisableUpdate(g_connection);
-        SLSOrderWindow(g_connection, window->border.id, 0, 0);
-    }
-
-    SLSSetWindowShape(g_connection, window->border.id, 0.0f, 0.0f, window->border.region);
-    CGContextClearRect(window->border.context, window->border.frame);
-    CGContextAddPath(window->border.context, window->border.path_ref);
-
-    if (g_window_manager.border_blur) {
-        CGContextDrawPath(window->border.context, kCGPathFillStroke);
-    } else {
-        CGContextStrokePath(window->border.context);
-    }
-
-    CGContextFlush(window->border.context);
-
-    if (is_ordered_in) {
-        SLSOrderWindow(g_connection, window->border.id, -1, window->id);
-        SLSReenableUpdate(g_connection);
-    }
-}
-
-void border_move(struct window *window, CGRect frame)
-{
-    frame = CGRectInset(frame, -g_window_manager.border_width, -g_window_manager.border_width);
-    SLSMoveWindow(g_connection, window->border.id, &frame.origin);
+    SLSReenableUpdate(g_connection);
 }
 
 void border_activate(struct window *window)
@@ -144,6 +83,7 @@ void border_activate(struct window *window)
                                g_window_manager.active_border_color.g,
                                g_window_manager.active_border_color.b,
                                g_window_manager.active_border_color.a);
+    CGContextSetRGBFillColor(window->border.context, 1, 1, 1, 0x15 / 255.);
     border_redraw(window);
 }
 
@@ -156,6 +96,7 @@ void border_deactivate(struct window *window)
                                g_window_manager.normal_border_color.g,
                                g_window_manager.normal_border_color.b,
                                g_window_manager.normal_border_color.a);
+    CGContextSetRGBFillColor(window->border.context, 1, 1, 1, 0x15 / 255.);
     border_redraw(window);
 }
 
@@ -189,6 +130,7 @@ void border_show(struct window *window)
     SLSOrderWindow(g_connection, window->border.id, -1, window->id);
 }
 
+extern CGError SLSSetWindowBackgroundBlurRadius(int cid, uint32_t wid, uint32_t radius);
 void border_create(struct window *window)
 {
     if (window->border.id) return;
@@ -199,20 +141,20 @@ void border_create(struct window *window)
         return;
     }
 
-    CGRect frame = CGRectNull;
-    CGSNewRegionWithRect(&frame, &window->border.region);
+    CGRect border_frame = CGRectInset(window->frame, -4, -4);
+    CGSNewRegionWithRect(&border_frame, &window->border.region);
+    window->border.frame.size = (CGSize){border_frame.size.width + 2, border_frame.size.height + 2};
+    CGRect window_border = window->frame;
+    window_border.origin = (CGPoint){4,4};
 
     uint64_t tag = 1ULL << 46;
     SLSNewWindow(g_connection, 2, 0, 0, window->border.region, &window->border.id);
     SLSSetWindowTags(g_connection, window->border.id, &tag, 64);
     sls_window_disable_shadow(window->border.id);
-    SLSSetWindowResolution(g_connection, window->border.id, g_window_manager.border_resolution);
+    SLSSetWindowResolution(g_connection, window->border.id, 1.0f);
     SLSSetWindowOpacity(g_connection, window->border.id, 0);
+    SLSSetWindowBackgroundBlurRadius(g_connection, window->border.id, 20);
     SLSSetWindowLevel(g_connection, window->border.id, window_level(window));
-
-    if (g_window_manager.border_blur) {
-        SLSSetWindowBackgroundBlurRadiusStyle(g_connection, window->border.id, 24, 1);
-    }
 
     window->border.id_ref = cfarray_of_cfnumbers(&window->border.id, sizeof(uint32_t), 1, kCFNumberSInt32Type);
     window->border.context = SLWindowContextCreate(g_connection, window->border.id, 0);
@@ -222,12 +164,18 @@ void border_create(struct window *window)
                                g_window_manager.normal_border_color.g,
                                g_window_manager.normal_border_color.b,
                                g_window_manager.normal_border_color.a);
-    CGContextSetRGBFillColor(window->border.context, 0.96f, 0.96f, 0.96f, 0.075f);
-    border_resize(window, window->frame);
 
-    if (border_should_order_in(window)) {
-        border_ensure_same_space(window);
-        SLSOrderWindow(g_connection, window->border.id, -1, window->id);
+    if (window_border.size.height > 18 && window_border.size.width > 18) {
+      CGContextSetRGBFillColor(window->border.context, 1, 1, 1, 0x15 / 255.);
+      window->border.path = CGPathCreateMutable();
+      CGPathAddRoundedRect(window->border.path, NULL, window_border, 9, 9);
+
+      border_redraw(window);
+
+      if (border_should_order_in(window)) {
+          border_ensure_same_space(window);
+          SLSOrderWindow(g_connection, window->border.id, -1, window->id);
+      }
     }
 
     border_update_window_notifications(window->id);
@@ -237,9 +185,9 @@ void border_destroy(struct window *window)
 {
     if (!window->border.id) return;
 
-    if (window->border.id_ref)   CFRelease(window->border.id_ref);
-    if (window->border.region)   CFRelease(window->border.region);
-    if (window->border.path_ref) CGPathRelease(window->border.path_ref);
+    if (window->border.id_ref) CFRelease(window->border.id_ref);
+    if (window->border.region) CFRelease(window->border.region);
+    if (window->border.path)   CGPathRelease(window->border.path);
 
     CGContextRelease(window->border.context);
     SLSReleaseWindow(g_connection, window->border.id);
